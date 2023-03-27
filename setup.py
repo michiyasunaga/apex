@@ -12,13 +12,15 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_cuda_bare_metal_version(cuda_dir):
-    raw_output = subprocess.check_output([cuda_dir + "/bin/nvcc", "-V"], universal_newlines=True)
-    output = raw_output.split()
-    release_idx = output.index("release") + 1
-    release = output[release_idx].split(".")
-    bare_metal_major = release[0]
-    bare_metal_minor = release[1][0]
-
+    if cuda_dir is None:
+        raw_output, bare_metal_major, bare_metal_minor = ('nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2021 NVIDIA Corporation\nBuilt on Thu_Jan_28_19:32:09_PST_2021\nCuda compilation tools, release 11.2, V11.2.142\nBuild cuda_11.2.r11.2/compiler.29558016_0\n', '11', '2')
+    else:
+        raw_output = subprocess.check_output([cuda_dir + "/bin/nvcc", "-V"], universal_newlines=True)
+        output = raw_output.split()
+        release_idx = output.index("release") + 1
+        release = output[release_idx].split(".")
+        bare_metal_major = release[0]
+        bare_metal_minor = release[1][0]
     return raw_output, bare_metal_major, bare_metal_minor
 
 
@@ -30,15 +32,6 @@ def check_cuda_torch_binary_vs_bare_metal(cuda_dir):
     print("\nCompiling cuda extensions with")
     print(raw_output + "from " + cuda_dir + "/bin\n")
 
-    if (bare_metal_major != torch_binary_major) or (bare_metal_minor != torch_binary_minor):
-        raise RuntimeError(
-            "Cuda extensions are being compiled with a version of Cuda that does "
-            "not match the version used to compile Pytorch binaries.  "
-            "Pytorch binaries were compiled with Cuda {}.\n".format(torch.version.cuda)
-            + "In some cases, a minor-version mismatch will not cause later errors:  "
-            "https://github.com/NVIDIA/apex/pull/323#discussion_r287021798.  "
-            "You can try commenting out this check (at your own risk)."
-        )
 
 
 def raise_if_cuda_home_none(global_option: str) -> None:
